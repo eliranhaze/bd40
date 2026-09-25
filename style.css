@@ -1,0 +1,62 @@
+:root {
+  --paper: #f7f2e8; /* sampled from the drawing's paper */
+  --graphite: #4a4644; /* sampled from its darker pencil lines */
+  --pad: clamp(24px, 5vh, 56px);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.stage {
+  --ar: 4 / 3; /* replaced with the drawing's own proportions once it loads */
+  position: relative;
+  aspect-ratio: var(--ar);
+  width: min(100vw - 2 * var(--pad), (100dvh - 2 * var(--pad)) * var(--ar));
+}
+
+.drawing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* the pencil runs right to the drawing's edges, so fade them into the paper */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 4%, #000 96%, transparent),
+    linear-gradient(to bottom, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 4%, #000 96%, transparent),
+    linear-gradient(to bottom, transparent, #000 5%, #000 95%, transparent);
+  mask-composite: intersect;
+}
+
+.tally {
+  position: fixed;
+  right: clamp(16px, 2.5vw, 36px);
+  bottom: clamp(14px, 3vh, 32px);
+  width: 134px;
+  height: 60px;
+  overflow: visible;
+  transition: opacity 1.6s ease;
+}
+
+.tally.done {
+  opacity: 0;
+}
+
+.tally path {
+  fill: none;
+  stroke: var(--graphite);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
