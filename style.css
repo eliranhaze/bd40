@@ -1,6 +1,7 @@
 :root {
   --paper: #f7f2e8; /* sampled from the drawing's paper */
   --graphite: #4a4644; /* sampled from its darker pencil lines */
+  --ink: #6a6560; /* the graphite, a shade lighter, for handwriting */
   --pad: clamp(24px, 5vh, 56px);
 }
 
@@ -15,13 +16,17 @@ body {
   place-items: center;
   overflow: hidden;
   background: var(--paper);
+  -webkit-user-select: none; /* all that clicking shouldn't select any text */
+  user-select: none;
 }
 
 .stage {
   --ar: 4 / 3; /* replaced with the drawing's own proportions once it loads */
+  --side: max(var(--pad), 6.4em); /* leaves room beside the drawing for its caption */
   position: relative;
   aspect-ratio: var(--ar);
-  width: min(100vw - 2 * var(--pad), (100dvh - 2 * var(--pad)) * var(--ar));
+  width: min(100vw - 2 * var(--side), (100dvh - 2 * var(--pad)) * var(--ar));
+  font: clamp(18px, 2.9vh, 26px) / 1 'La Belle Aurore', cursive;
 }
 
 .drawing {
@@ -38,6 +43,109 @@ body {
     linear-gradient(to right, transparent, #000 4%, #000 96%, transparent),
     linear-gradient(to bottom, transparent, #000 5%, #000 95%, transparent);
   mask-composite: intersect;
+}
+
+/* The home page's title, at the top of the page until the first drawing is revealed. */
+.cover {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  align-content: start;
+  justify-content: center;
+  justify-items: center;
+  padding-top: clamp(20px, 6vh, 64px);
+  font-family: 'La Belle Aurore', cursive;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(40px, 8vh, 80px);
+  font-weight: normal;
+  color: var(--ink);
+}
+
+.title.ink {
+  transition-duration: 1s; /* fades away slowly as the first drawing opens up */
+}
+
+/* The place and year, handwritten beside the drawing's bottom left corner. */
+.caption {
+  position: absolute;
+  right: calc(100% + 0.4em);
+  bottom: 3%;
+  margin: 0;
+  color: var(--ink);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Inked text fades in while a soft edge sweeps across each line, left to right, as if
+   it were being written. */
+.ink {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.ink.written {
+  opacity: 1;
+}
+
+.ink span {
+  display: block;
+  padding: 0.15em 0.3em; /* keeps the flourishes inside the mask below */
+  -webkit-mask: linear-gradient(to right, #000 45%, transparent 55%) 0 0 / 250% 100% no-repeat;
+  mask: linear-gradient(to right, #000 45%, transparent 55%) 0 0 / 250% 100% no-repeat;
+}
+
+.ink.written span {
+  animation: write 0.9s ease-in-out backwards;
+}
+
+.title.written span {
+  animation-duration: 1.6s;
+}
+
+.caption.written .year {
+  animation-duration: 0.5s;
+  animation-delay: 0.75s;
+}
+
+@keyframes write {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+}
+
+/* Appears once the last drawing is complete, to go back to the beginning. */
+.restart {
+  position: fixed;
+  top: clamp(14px, 3vh, 32px);
+  left: clamp(16px, 2.5vw, 36px);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: clamp(20px, 3.2vh, 28px) / 1 'La Belle Aurore', cursive;
+  color: var(--ink);
+  cursor: pointer;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0s 0.5s, color 0.2s ease;
+}
+
+.restart.written {
+  visibility: visible;
+  transition: opacity 0.5s ease, color 0.2s ease;
+}
+
+.restart:hover {
+  color: var(--graphite);
+}
+
+.restart:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .tally {
