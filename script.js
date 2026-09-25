@@ -90,7 +90,13 @@ const easeOut = t => 1 - (1 - t) ** 3;
 const easeInOut = t => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2);
 const wobble = n => (Math.random() - 0.5) * 2 * n;
 
-(async () => {
+// Phones only get a note asking for a computer (see style.css), so there's nothing to load
+// for them. A phone is a touch screen whose shorter side is under 600px; tablets are welcome.
+const isPhone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+document.documentElement.classList.toggle('phone', isPhone);
+if (!isPhone) start();
+
+async function start() {
   const handwriting = document.fonts.load('1em "La Belle Aurore"');
   const first = load(0);
   await handwriting; // so nothing is written in a stand-in font
@@ -99,7 +105,7 @@ const wobble = n => (Math.random() - 0.5) * 2 * n;
   mode = 'landing';
   fitStage();
   for (let i = 1; i < drawings.length; i++) await load(i);
-})();
+}
 
 addEventListener('resize', resize);
 
