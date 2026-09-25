@@ -81,6 +81,54 @@ body {
   white-space: nowrap;
 }
 
+/* On the last drawing, one of the sheep has something to say, in a speech bubble at the
+   drawing's right. */
+.stage.speaking {
+  --side: max(var(--pad), 9.5em); /* room for the bubble beside the drawing */
+}
+
+.bubble {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.bubble.shown {
+  opacity: 1;
+}
+
+.bubble .fill {
+  fill: var(--paper);
+}
+
+.bubble .line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.speech {
+  position: absolute;
+  left: calc(100% + 1.4em);
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.speech.written span:last-child {
+  animation-delay: 0.6s;
+}
+
 /* Inked text fades in while a soft edge sweeps across each line, left to right, as if
    it were being written. */
 .ink {
@@ -104,7 +152,7 @@ body {
 }
 
 .title.written span {
-  animation-duration: 1.6s;
+  animation-duration: 2.8s;
 }
 
 .caption.written .year {

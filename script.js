@@ -2,6 +2,7 @@
 // the first drawing around the cursor, a little wider than the last; the fortieth
 // click keeps opening until the whole drawing is there. After that, each click fades
 // the drawing away and draws the next one in, from the top left to the bottom right.
+// Once the last one is complete, a restart button leads back to the blank page.
 
 // By year, then place, then letter.
 const DRAWINGS = [
@@ -22,7 +23,11 @@ const DRAWINGS = [
   'iceland_2024b',
   'iceland_2024c',
 ].map(name => `images/${name}.webp`);
-const CLICKS = 6;
+const CLICKS = 40;
+
+// Where the sheep in the last drawing opens its mouth, as a fraction of the drawing's
+// width and height; the tail of its speech bubble points there.
+const MOUTH = { x: 0.586, y: 0.595 };
 
 // Glimpse radii, as a fraction of the drawing's height.
 const FIRST_RADIUS = 0.05;
@@ -39,6 +44,7 @@ const FADE_AWAY = 1000; // a drawing fading back to blank paper before the next 
 const DRAW = 5000;
 const SETTLE = 800; // clicks are ignored this long after a drawing is complete
 const RESTART_DELAY = 1000; // after the last drawing is complete, before the restart button
+const BUBBLE_DRAW = 1200; // the speech bubble's outline drawing itself
 
 // Fading and drawing both sweep diagonally, measured from 0 at the top left corner to 1
 // at the bottom right. Pencil strokes land within a band behind the drawing sweep's
@@ -58,6 +64,9 @@ const captionPlace = caption.querySelector('.place');
 const captionYear = caption.querySelector('.year');
 const title = document.querySelector('.title');
 const restartButton = document.querySelector('.restart');
+const bubble = document.querySelector('.bubble');
+const [bubbleFill, bubbleLine] = bubble.children;
+const speech = document.querySelector('.speech');
 const ctx = canvas.getContext('2d');
 
 // Pencil strokes build up here, at the drawing's own resolution.
@@ -121,6 +130,7 @@ function resize() {
   canvas.width = Math.round(box.width * devicePixelRatio);
   canvas.height = Math.round(box.height * devicePixelRatio);
   draw(performance.now());
+  if (bubble.classList.contains('shown')) shapeBubble();
 }
 
 function glimpse(event) {
@@ -152,6 +162,8 @@ function turn() {
 function restart() {
   if (mode !== 'shown') return;
   restartButton.classList.remove('written');
+  bubble.classList.remove('shown');
+  speech.classList.remove('written');
   fadeAway(home);
 }
 
@@ -168,6 +180,7 @@ function home() {
   clicks = 0;
   tallyMarks.replaceChildren();
   tally.classList.remove('done');
+  stage.classList.remove('speaking');
   mode = 'landing';
   fitStage();
   title.classList.add('written');
@@ -179,6 +192,7 @@ function startDrawing(now) {
   maskCtx.lineCap = 'round';
   sweep = { marks: strokes(mask.width, mask.height), painted: 0, start: now, duration: DRAW };
   mode = 'drawing';
+  stage.classList.toggle('speaking', current === drawings.length - 1);
   fitStage(); // the page is blank at this moment, so a differently shaped drawing can swap in unseen
 }
 
@@ -186,7 +200,53 @@ function show(now) {
   sweep = null;
   mode = 'shown';
   shownAt = now;
-  if (current === drawings.length - 1) setTimeout(() => restartButton.classList.add('written'), RESTART_DELAY);
+  if (current === drawings.length - 1) {
+    speak();
+    setTimeout(() => restartButton.classList.add('written'), RESTART_DELAY);
+  }
+}
+
+// The sheep's speech bubble draws itself out of its mouth, then the words are written in.
+function speak() {
+  shapeBubble();
+  const length = bubbleLine.getTotalLength();
+  bubbleLine.style.strokeDasharray = length;
+  bubble.classList.add('shown');
+  bubbleLine.animate({ strokeDashoffset: [length, 0] }, { duration: BUBBLE_DRAW, easing: 'ease-in-out' }).onfinish = () => {
+    bubbleLine.style.strokeDasharray = ''; // solid again, whatever shape a resize gives it
+  };
+  bubbleFill.animate({ opacity: [0, 1] }, { duration: BUBBLE_DRAW, easing: 'ease-in' });
+  setTimeout(() => speech.classList.add('written'), BUBBLE_DRAW / 2);
+}
+
+// Fits the bubble around the words, with its tail reaching into the drawing to just short
+// of the sheep's mouth. Coordinates are the stage's own, in CSS pixels.
+function shapeBubble() {
+  const box = stage.getBoundingClientRect();
+  const words = speech.getBoundingClientRect();
+  const cx = words.left - box.left + words.width / 2;
+  const cy = words.top - box.top + words.height / 2;
+  const rx = words.width * 0.66;
+  const ry = words.height * 0.75;
+  const mouthX = MOUTH.x * box.width;
+  const mouthY = MOUTH.y * box.height;
+
+  // The tail leaves the side of the ellipse that faces the mouth.
+  const facing = Math.atan2((mouthY - cy) / ry, (mouthX - cx) / rx);
+  const x1 = cx + rx * Math.cos(facing - 0.2);
+  const y1 = cy + ry * Math.sin(facing - 0.2);
+  const x2 = cx + rx * Math.cos(facing + 0.2);
+  const y2 = cy + ry * Math.sin(facing + 0.2);
+  const reach = Math.hypot(cx - mouthX, cy - mouthY);
+  const tipX = mouthX + ((cx - mouthX) / reach) * 0.03 * box.width;
+  const tipY = mouthY + ((cy - mouthY) / reach) * 0.03 * box.width;
+  // Both sides of the tail bow upward a little.
+  const bow = (x, y) => `${(x + tipX) / 2} ${(y + tipY) / 2 - 0.08 * reach}`;
+
+  const d = `M${tipX} ${tipY} Q${bow(x2, y2)} ${x2} ${y2} A${rx} ${ry} 0 1 1 ${x1} ${y1} Q${bow(x1, y1)} ${tipX} ${tipY} Z`;
+  bubble.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  bubbleFill.setAttribute('d', d);
+  bubbleLine.setAttribute('d', d);
 }
 
 function writeCaption() {
